@@ -1,16 +1,16 @@
-import { ObjectId } from "bson"
+import { ObjectId } from "bson";
 
-let comments
+let comments;
 
 export default class CommentsDAO {
   static async injectDB(conn) {
     if (comments) {
-      return
+      return;
     }
     try {
-      comments = await conn.db(process.env.MFLIX_NS).collection("comments")
+      comments = await conn.db(process.env.MFLIX_NS).collection("comments");
     } catch (e) {
-      console.error(`Unable to establish collection handles in userDAO: ${e}`)
+      console.error(`Unable to establish collection handles in userDAO: ${e}`);
     }
   }
 
@@ -43,14 +43,21 @@ export default class CommentsDAO {
    */
   static async addComment(movieId, user, comment, date) {
     try {
-      // TODO Ticket: Create/Update Comments
+      // DONE Ticket: Create/Update Comments
       // Construct the comment document to be inserted into MongoDB.
-      const commentDoc = { someField: "someValue" }
 
-      return await comments.insertOne(commentDoc)
+      const commentDoc = {
+        name: user.name,
+        email: user.email,
+        movie_id: ObjectId(movieId),
+        text: comment,
+        date: date
+      };
+
+      return await comments.insertOne(commentDoc);
     } catch (e) {
-      console.error(`Unable to post comment: ${e}`)
-      return { error: e }
+      console.error(`Unable to post comment: ${e}`);
+      return { error: e };
     }
   }
 
@@ -66,18 +73,20 @@ export default class CommentsDAO {
    */
   static async updateComment(commentId, userEmail, text, date) {
     try {
-      // TODO Ticket: Create/Update Comments
+      // DONE Ticket: Create/Update Comments
       // Use the commentId and userEmail to select the proper comment, then
       // update the "text" and "date" fields of the selected comment.
-      const updateResponse = await comments.updateOne(
-        { someField: "someValue" },
-        { $set: { someOtherField: "someOtherValue" } },
-      )
 
-      return updateResponse
+      // here's how the update is performed
+      const updateResponse = await comments.updateOne(
+        { _id: ObjectId(commentId), email: userEmail },
+        { $set: { text, date } }
+      );
+
+      return updateResponse;
     } catch (e) {
-      console.error(`Unable to update comment: ${e}`)
-      return { error: e }
+      console.error(`Unable to update comment: ${e}`);
+      return { error: e };
     }
   }
 
@@ -96,12 +105,13 @@ export default class CommentsDAO {
       // Use the userEmail and commentId to delete the proper comment.
       const deleteResponse = await comments.deleteOne({
         _id: ObjectId(commentId),
-      })
+        email: userEmail
+      });
 
-      return deleteResponse
+      return deleteResponse;
     } catch (e) {
-      console.error(`Unable to delete comment: ${e}`)
-      return { error: e }
+      console.error(`Unable to delete comment: ${e}`);
+      return { error: e };
     }
   }
 
@@ -116,20 +126,20 @@ export default class CommentsDAO {
     try {
       // TODO Ticket: User Report
       // Return the 20 users who have commented the most on MFlix.
-      const pipeline = []
+      const pipeline = [];
 
       // TODO Ticket: User Report
       // Use a more durable Read Concern here to make sure this data is not stale.
-      const readConcern = comments.readConcern
+      const readConcern = comments.readConcern;
 
       const aggregateResult = await comments.aggregate(pipeline, {
-        readConcern,
-      })
+        readConcern
+      });
 
-      return await aggregateResult.toArray()
+      return await aggregateResult.toArray();
     } catch (e) {
-      console.error(`Unable to retrieve most active commenters: ${e}`)
-      return { error: e }
+      console.error(`Unable to retrieve most active commenters: ${e}`);
+      return { error: e };
     }
   }
 }

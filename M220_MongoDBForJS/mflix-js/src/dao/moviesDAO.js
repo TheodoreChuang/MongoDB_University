@@ -115,7 +115,7 @@ export default class MoviesDAO {
 
     const searchGenre = Array.isArray(genre) ? genre : Array(genre);
 
-    // TODO Ticket: Text and Subfield Search
+    // DONE Ticket: Text and Subfield Search
     // Construct a query that will search for the chosen genre.
     const query = { genres: { $in: searchGenre } };
     const project = {};
@@ -194,9 +194,12 @@ export default class MoviesDAO {
 
     const queryPipeline = [
       matchStage,
-      sortStage
-      // TODO Ticket: Faceted Search
+      sortStage,
+      // DONE Ticket: Faceted Search
       // Add the stages to queryPipeline in the correct order.
+      skipStage,
+      limitStage,
+      facetStage
     ];
 
     try {
@@ -258,9 +261,11 @@ export default class MoviesDAO {
     Paging can be implemented by using the skip() and limit() cursor methods.
     */
 
-    // TODO Ticket: Paging
+    // DONE Ticket: Paging
     // Use the cursor to only return the movies that belong on the current page
-    const displayCursor = cursor.limit(moviesPerPage);
+    const displayCursor = cursor
+      .skip(page * moviesPerPage)
+      .limit(moviesPerPage);
 
     try {
       const moviesList = await displayCursor.toArray();
@@ -293,12 +298,38 @@ export default class MoviesDAO {
       stage that searches the `comments` collection for the correct comments.
       */
 
-      // TODO Ticket: Get Comments
+      // DONE Ticket: Get Comments
       // Implement the required pipeline.
       const pipeline = [
         {
+          // find the current movie in the "movies" collection
           $match: {
             _id: ObjectId(id)
+          }
+        },
+        {
+          // lookup comments from the "comments" collection
+          $lookup: {
+            from: "comments",
+            let: { id: "$_id" },
+            pipeline: [
+              {
+                // only join comments with a match movie_id
+                $match: {
+                  $expr: {
+                    $eq: ["$movie_id", "$$id"]
+                  }
+                }
+              },
+              {
+                // sort by date in descending order
+                $sort: {
+                  date: -1
+                }
+              }
+            ],
+            // call embedded field comments
+            as: "comments"
           }
         }
       ];
