@@ -124,13 +124,17 @@ export default class CommentsDAO {
     email in the `comments` collection.
     */
     try {
-      // TODO Ticket: User Report
+      // DONE Ticket: User Report
       // Return the 20 users who have commented the most on MFlix.
-      const pipeline = [];
+      const groupStage = { $group: { _id: "$email", count: { $sum: 1 } } };
+      const sortStage = { $sort: { count: -1 } };
+      const limitStage = { $limit: 20 };
+      const pipeline = [groupStage, sortStage, limitStage];
+      // OR const pipeline = [{ $sortByCount: "$email" }, { $limit: 20 }];
 
-      // TODO Ticket: User Report
-      // Use a more durable Read Concern here to make sure this data is not stale.
-      const readConcern = comments.readConcern;
+      // DONE Ticket: User Report
+      // here's how the Read Concern durability is increased
+      const readConcern = { level: "majority" };
 
       const aggregateResult = await comments.aggregate(pipeline, {
         readConcern
